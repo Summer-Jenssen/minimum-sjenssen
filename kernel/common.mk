@@ -13,7 +13,8 @@ DEPENDENCIES := $(OBJECTS:.o=.d)
 KERNEL_RUNTIME := $(KERNEL_DIR)/build/libminemu_kernel.a
 KERNEL_RUNTIME_INPUTS := $(wildcard $(KERNEL_DIR)/src/runtime/*.c) \
 	$(wildcard $(KERNEL_DIR)/src/startup/*.S) \
-	$(wildcard $(KERNEL_DIR)/include/minemu/*.h) $(KERNEL_DIR)/Makefile
+	$(wildcard $(KERNEL_DIR)/include/minemu/*.h) $(KERNEL_DIR)/Makefile \
+	$(wildcard $(KERNEL_DIR)/src/drivers/*.c)
 
 ARCH_FLAGS := -mcpu=cortex-a9 -marm -mfloat-abi=soft
 CPPFLAGS := -I$(KERNEL_DIR)/include
