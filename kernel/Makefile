@@ -14,7 +14,9 @@ RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/trace.o \
 	$(BUILD)/startup/boot.o \
 	$(BUILD)/startup/vectors.o \
-	$(BUILD)/drivers/uart.o
+	$(BUILD)/drivers/uart.o \
+	$(BUILD)/runtime/irq.o \
+	$(BUILD)/startup/irq_trampoline.o 
 
 OBJECTS := $(CORE_OBJECT) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)
