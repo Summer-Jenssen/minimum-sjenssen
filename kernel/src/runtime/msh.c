@@ -20,29 +20,28 @@ void tokenize_string(char* string, int len_str, const char* delim, char* output[
     //check: are the pointers going to disappear when the function ends since they're local? May need to allocate space for them... agdkajhdj why is C like this
     //I want to go back home to Java
     //I COULD also make it ignore extra delims between tokens, but not sure. I should do something about the case where someone accidentally enters space 2x though
-    char* character;
-    char* token;
+    char character;
+    char token[LINE_BUFFER_CAPACITY + 1];
     int tokenIndex = 0; 
     int outputIndex = 0;
     int hasSeenNonDelimChar = 0; // checks if we have seen a character that is not the deliminator yet, this way we can ignore leading spaces
     for (int i = 0; i < len_str; i++){
         character = string[i];
-        if(*character == *delim && hasSeenNonDelimChar == 0){
+        if(character == *delim && hasSeenNonDelimChar == 0){
             continue; //ignore leading whitespace
-        } else if (*character == *delim && hasSeenNonDelimChar == 1){
+        } else if (character == *delim && hasSeenNonDelimChar == 1){
             token[tokenIndex] = '\0';
             tokenIndex = 0;
-            output[outputIndex] = *token;
+            output[outputIndex] = token;
             outputIndex++;
         } else {
-            token[tokenIndex] = *character;
+            token[tokenIndex] = character;
             tokenIndex++;
             hasSeenNonDelimChar = 1;
         }
     }
     if(outputIndex != LINE_BUFFER_CAPACITY){ //didn't fully fill the array. Other funcs to parse need to know when command ends, so it's needed.
-        char end = '\0';
-        output[outputIndex] = end;
+        output[outputIndex] = NULL;
     }
 }
 
@@ -54,8 +53,8 @@ int string_equal(char* str1, char* str2){
     int loop = 1;
     while(loop == 1){
         if (str1[i] == str2[i]){ //regular character equals the other
-            continue;
             i++;
+            continue;
         } else if ((str1[i] == '\0' && str2[i] != '\0') || (str2[i] == '\0' && str1[i] != '\0')){ //either end prematurely
             return 0;
         } else if (str1[i] == '\0' && str2[i] == '\0'){ //both end at the same time
@@ -69,8 +68,7 @@ int string_equal(char* str1, char* str2){
 //checks the length (# args) of a command
 int len_command(char* command[LINE_BUFFER_CAPACITY + 1]){
     int i = 0;
-    char end = '\0';
-    while (*command[i] != '\0'){
+    while (command[i] != NULL){
         i++;
     }
     return i;
