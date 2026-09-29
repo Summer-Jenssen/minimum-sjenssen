@@ -6,8 +6,8 @@
 struct uart_rx_buffer{
     uint32_t buffer[MINEMU_UART_RX_CAPACITY]; //"global" buffer to hold everything read from the uart!
     uint32_t nbytes_available; //keeps track of nbytes free. = MINEMU_UART_RX_CAPACITY-nbytes_used, starting from index 0 to nbytes_used
-    int next_read; //tracks what the next byte (index) to read out of the buffer is
-    int next_write; //tracks the next byte (index) to be written in
+    uint32_t next_read; //tracks what the next byte (index) to read out of the buffer is
+    uint32_t next_write; //tracks the next byte (index) to be written in
     //need to figure out when to clear the buffer... maybe add func to free it? 
     //look at when stdin is cleared for reference!
 };
