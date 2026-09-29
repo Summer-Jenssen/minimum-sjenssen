@@ -1,8 +1,8 @@
 #include "minemu/uart.h"
+#define LINE_BUFFER_CAPACITY 20
 
-const int LINE_BUFFER_CAPACITY = 20; 
-const char* space = ' ';
-const char* new_line = '\n';
+const char* space = " ";
+const char* new_line = "\n";
 const char cmd_not_found[] = "command not found: ";
 const char echo_error[] = "echo cannot have 0 args\n";
 
@@ -21,7 +21,7 @@ void clear_line_buffer(struct line_buffer *lb){
     Ex: cd f hi -> [[cd\0],[f\0],[hi\0]]
     Doesn't yet implement checking for literalls, like cd "f hi". That just gives [[cd\0],["f\0],[hi"\0]]
  **/
-void tokenize_string(char* string, int len_str, const char* delim, char* output[LINE_BUFFER_CAPACITY +1]){
+void tokenize_string(char* string, int str_len, const char* delim, char* output[LINE_BUFFER_CAPACITY +1]){
     //check: are the pointers going to disappear when the function ends since they're local? May need to allocate space for them... agdkajhdj why is C like this
     //I want to go back home to Java
     //I COULD also make it ignore extra delims between tokens, but not sure. I should do something about the case where someone accidentally enters space 2x though
@@ -30,7 +30,7 @@ void tokenize_string(char* string, int len_str, const char* delim, char* output[
     int tokenIndex = 0; 
     int outputIndex = 0;
     int hasSeenNonDelimChar = 0; // checks if we have seen a character that is not the deliminator yet, this way we can ignore leading spaces
-    for (int i = 0; i < len_str; i++){
+    for (int i = 0; i < str_len; i++){
         character = string[i];
         if(character == *delim && hasSeenNonDelimChar == 0){
             continue; //ignore leading whitespace
@@ -99,7 +99,7 @@ void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
     } else if (string_equal(command[0], "echo")){
         echo(command);
     } else {
-        uart_print(cmd_not_found, 27);
+        uart_print(cmd_not_found, 19);
         uart_print(command[0], len_str(command[0]));
         uart_print(new_line, 1);
     }
@@ -107,7 +107,7 @@ void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
 
 void echo(char* command[LINE_BUFFER_CAPACITY]){
     int len = len_command(command);
-    if (len >! 1){
+    if (len <= 0){
         uart_print(echo_error, 24);
     } else if (len == 1){
         uart_print(new_line, 1);
@@ -129,8 +129,9 @@ void start_msh(){
     char ready[] = "msh> ";
     int lenReady = 5;
     int running = 1;
-    int done = 1;
+    int done = 0;
     uint32_t byte; 
+    char* command[LINE_BUFFER_CAPACITY + 1];
 
 
     //init line buffer
@@ -140,41 +141,45 @@ void start_msh(){
 
     while(running == 1){
         uart_print(ready, lenReady);
-        int fail = readb_uart_rx_buffer(&byte);
-        if(fail == 1){ //case where there is nothing to read in the buffer
-            continue;
-        }
-            switch (byte){
-                case '\n':
-                //line entered, move to logic for handling it. 
-                char* command[LINE_BUFFER_CAPACITY + 1];
-                tokenize_string(lb.buffer, lb.length, space, command);
-                run_command(command);
-                clear_line_buffer(&lb);
-                break;
-                case 0x08: 
-                //edit buffer, recieved backspace.
-                if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
-                    lb.next_write--;
-                    lb.length--;
+        done = 0;
+
+        while (done == 0){
+            int fail = readb_uart_rx_buffer(&byte);
+            if(fail == 1){ //case where there is nothing to read in the buffer
+                continue;
+            }
+                switch (byte){
+                    case '\n':
+                    //line entered, move to logic for handling it. 
+                    tokenize_string(lb.buffer, lb.length, space, command);
+                    run_command(command);
+                    clear_line_buffer(&lb);
+                    done = 1;
+                    break;
+                    case 0x08: 
+                    //edit buffer, recieved backspace.
+                    if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
+                        lb.next_write--;
+                        lb.length--;
+                    }
+                    break;
+                    case 0x7f: 
+                    //edit buffer, recieved backspace.
+                    if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
+                        lb.next_write--;
+                        lb.length--;
+                    }
+                    break;
+                    default:
+                    //regular character, write it into the buffer
+                    if(lb.next_write < 20){
+                        lb.buffer[lb.next_write] = (char)byte;
+                        lb.next_write++;
+                        lb.length++;
+                    } 
+                    //else, the byte is discarded. Sorry :( sucks to suck
+                    break;
                 }
-                break;
-                case 0x7f: 
-                //edit buffer, recieved backspace.
-                if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
-                    lb.next_write--;
-                    lb.length--;
-                }
-                break;
-                default:
-                //regular character, write it into the buffer
-                if(lb.next_write < 20){
-                    lb.buffer[lb.next_write] = (char)byte;
-                    lb.next_write++;
-                    lb.length++;
-                } 
-                //else, the byte is discarded. Sorry :( sucks to suck
-                break;
             }
         }
     }
