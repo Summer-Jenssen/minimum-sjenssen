@@ -5,7 +5,7 @@
 
 struct uart_rx_buffer{
     uint32_t buffer[MINEMU_UART_RX_CAPACITY]; //"global" buffer to hold everything read from the uart!
-    int nbytes_available; //keeps track of nbytes free. = MINEMU_UART_RX_CAPACITY-nbytes_used, starting from index 0 to nbytes_used
+    uint32_t nbytes_available; //keeps track of nbytes free. = MINEMU_UART_RX_CAPACITY-nbytes_used, starting from index 0 to nbytes_used
     int next_read; //tracks what the next byte (index) to read out of the buffer is
     int next_write; //tracks the next byte (index) to be written in
     //need to figure out when to clear the buffer... maybe add func to free it? 
@@ -27,7 +27,7 @@ void clear_uart_rx_buffer(){
     rx_buffer.next_write = 0;
     //maybe zero out the data? Not really important, guess 
     //note: stdin buffer gets cleared when \n is read (?), so yes, zero it out bc may want to implement
-    for (int i = 0; i < MINEMU_UART_RX_CAPACITY; i++){
+    for (uint32_t i = 0; i < MINEMU_UART_RX_CAPACITY; i++){
         rx_buffer.buffer[i] = '\0'; //0 it out!
     }
     minemu_irq_enable();
