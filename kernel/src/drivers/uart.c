@@ -46,7 +46,7 @@ int writeb_uart_rx_buffer(uint32_t byte){
     return 1; //failure :(
 }
 
-//Accepts a pointer to a byte. Writes what was read to it before returning a success(0)/failure(1) code 
+//Accepts a pointer to a byte. Writes what was read to it before returning a success(0)/failure(1) code. fails if nothing to read in buffer
 int readb_uart_rx_buffer(uint32_t* byte){
     minemu_irq_disable();
     if(rx_buffer.nbytes_available < MINEMU_UART_RX_CAPACITY){ //checks if there are bytes to read! If all bytes are available, do nothing!
