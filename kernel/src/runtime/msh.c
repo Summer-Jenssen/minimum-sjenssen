@@ -1,8 +1,13 @@
 #include "minemu/uart.h"
 
 const int LINE_BUFFER_CAPACITY = 20; 
+const char* space = ' ';
+const char* new_line = '\n';
+const char cmd_not_found[] = "command not found: ";
+const char echo_error[] = "echo cannot have 0 args\n";
+
 struct line_buffer{
-        uint32_t buffer[LINE_BUFFER_CAPACITY + 1]; //is the buffer capacity +1 so that you can add a \0 to signify the end, makes processing easier 
+        char buffer[LINE_BUFFER_CAPACITY + 1]; //is the buffer capacity +1 so that you can add a \0 to signify the end, makes processing easier 
         uint32_t next_write; //tracks the next byte (index) to be written in
         uint32_t length; 
     };
@@ -77,7 +82,6 @@ int len_command(char* command[LINE_BUFFER_CAPACITY + 1]){
 //returns the length of null terminated string str
 int len_str(char* str){
     int i = 0;
-    char end = '\0';
     while (str[i] != '\0'){
         i++;
     }
@@ -89,20 +93,33 @@ int len_str(char* str){
 
 
 void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
-    char cmd_not_found[] = "command not found: COMMAND";
-    if (string_equal(*command[0], "echo")){
+    if(command[0] == NULL){
+        //do nothing
+        uart_print(new_line, 1);
+    } else if (string_equal(command[0], "echo")){
         echo(command);
     } else {
-        uart_print(cmd_not_found, 26);
+        uart_print(cmd_not_found, 27);
+        uart_print(command[0], len_str(command[0]));
+        uart_print(new_line, 1);
     }
 }
 
 void echo(char* command[LINE_BUFFER_CAPACITY]){
-    char cmd_not_found[] = "command not found: COMMAND";
-    if (len_command(command) != 2){
-        uart_print(cmd_not_found, 26);
-    } else {
-        uart_print(command[1], len_str(command[1]));
+    int len = len_command(command);
+    if (len >! 1){
+        uart_print(echo_error, 24);
+    } else if (len == 1){
+        uart_print(new_line, 1);
+    }
+    else {
+        for (int i = 1; i < len; i++){
+            uart_print(command[i], len_str(command[i]));
+            if(i+1 < len){
+                uart_print(space, 1);
+            }
+        }
+        uart_print(new_line, 1);
     }
 }
 
@@ -113,7 +130,7 @@ void start_msh(){
     int lenReady = 5;
     int running = 1;
     int done = 1;
-    uint32_t* byte; 
+    uint32_t byte; 
 
 
     //init line buffer
@@ -123,22 +140,26 @@ void start_msh(){
 
     while(running == 1){
         uart_print(ready, lenReady);
-
-        while(done != 1){
-            int fail = readb_uart_rx_buffer(&byte);
-            if(fail == 1){ //case where there is nothing to read in the buffer
-                continue;
-            }
-            switch (*byte){
+        int fail = readb_uart_rx_buffer(&byte);
+        if(fail == 1){ //case where there is nothing to read in the buffer
+            continue;
+        }
+            switch (byte){
                 case '\n':
                 //line entered, move to logic for handling it. 
-                char space = ' ';
                 char* command[LINE_BUFFER_CAPACITY + 1];
                 tokenize_string(lb.buffer, lb.length, space, command);
                 run_command(command);
                 clear_line_buffer(&lb);
                 break;
-                case 0x08 || 0x0f: 
+                case 0x08: 
+                //edit buffer, recieved backspace.
+                if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
+                    lb.next_write--;
+                    lb.length--;
+                }
+                break;
+                case 0x7f: 
                 //edit buffer, recieved backspace.
                 if(lb.next_write != 0){ //check that we aren't about to go into negative indexes
                     lb.next_write--;
@@ -148,7 +169,7 @@ void start_msh(){
                 default:
                 //regular character, write it into the buffer
                 if(lb.next_write < 20){
-                    lb.buffer[lb.next_write] = *byte;
+                    lb.buffer[lb.next_write] = (char)byte;
                     lb.next_write++;
                     lb.length++;
                 } 
@@ -157,5 +178,3 @@ void start_msh(){
             }
         }
     }
-
-}
