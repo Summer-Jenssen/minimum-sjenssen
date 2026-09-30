@@ -1,10 +1,10 @@
 #include "minemu/uart.h"
 #define LINE_BUFFER_CAPACITY 20
 
-const char* space = " ";
-const char* new_line = "\n";
-const char cmd_not_found[] = "command not found: ";
-const char echo_error[] = "echo cannot have 0 args\n";
+char* space = " ";
+char* new_line = "\n";
+char cmd_not_found[] = "command not found: ";
+char echo_error[] = "echo cannot have 0 args\n";
 
 struct line_buffer{
         char buffer[LINE_BUFFER_CAPACITY + 1]; //is the buffer capacity +1 so that you can add a \0 to signify the end, makes processing easier 
@@ -21,33 +21,33 @@ void clear_line_buffer(struct line_buffer *lb){
     Ex: cd f hi -> [[cd\0],[f\0],[hi\0]]
     Doesn't yet implement checking for literalls, like cd "f hi". That just gives [[cd\0],["f\0],[hi"\0]]
  **/
-void tokenize_string(char* string, int str_len, const char* delim, char* output[LINE_BUFFER_CAPACITY +1]){
+void tokenize_string(char* string, int str_len, const char* delim, char* output[LINE_BUFFER_CAPACITY +1], char tokens[LINE_BUFFER_CAPACITY + 1][LINE_BUFFER_CAPACITY + 1]){
     //check: are the pointers going to disappear when the function ends since they're local? May need to allocate space for them... agdkajhdj why is C like this
     //I want to go back home to Java
     //I COULD also make it ignore extra delims between tokens, but not sure. I should do something about the case where someone accidentally enters space 2x though
     char character;
-    char token[LINE_BUFFER_CAPACITY + 1];
     int tokenIndex = 0; 
     int outputIndex = 0;
-    int hasSeenNonDelimChar = 0; // checks if we have seen a character that is not the deliminator yet, this way we can ignore leading spaces
     for (int i = 0; i < str_len; i++){
         character = string[i];
-        if(character == *delim && hasSeenNonDelimChar == 0){
-            continue; //ignore leading whitespace
-        } else if (character == *delim && hasSeenNonDelimChar == 1){
-            token[tokenIndex] = '\0';
+        if(character == *delim && tokenIndex == 0){//ignore leading whitespace
+            continue; 
+        } else if (character == *delim && tokenIndex > 0){
+            tokens[outputIndex][tokenIndex] = '\0';
             tokenIndex = 0;
-            output[outputIndex] = token;
+            output[outputIndex] = tokens[outputIndex];
             outputIndex++;
         } else {
-            token[tokenIndex] = character;
+            tokens[outputIndex][tokenIndex] = character;
             tokenIndex++;
-            hasSeenNonDelimChar = 1;
+        } if (i + 1 == str_len && tokenIndex > 0){ //still a token waiting to be saved and this is the last character
+            tokens[outputIndex][tokenIndex] = '\0';
+            tokenIndex = 0;
+            output[outputIndex] = tokens[outputIndex];
+            outputIndex++;
         }
     }
-    if(outputIndex != LINE_BUFFER_CAPACITY){ //didn't fully fill the array. Other funcs to parse need to know when command ends, so it's needed.
-        output[outputIndex] = NULL;
-    }
+        output[outputIndex] = NULL; //mark the end of teh array for other functions 
 }
 
 /** move to str library later
@@ -55,8 +55,7 @@ void tokenize_string(char* string, int str_len, const char* delim, char* output[
  * **/
 int string_equal(char* str1, char* str2){
     int i = 0;
-    int loop = 1;
-    while(loop == 1){
+    while(1){
         if (str1[i] == str2[i]){ //regular character equals the other
             i++;
             continue;
@@ -95,8 +94,7 @@ int len_str(char* str){
 void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
     if(command[0] == NULL){
         //do nothing
-        uart_print(new_line, 1);
-    } else if (string_equal(command[0], "echo")){
+    } else if (string_equal(command[0], "echo") == 1){
         echo(command);
     } else {
         uart_print(cmd_not_found, 19);
@@ -107,12 +105,9 @@ void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
 
 void echo(char* command[LINE_BUFFER_CAPACITY]){
     int len = len_command(command);
-    if (len <= 0){
-        uart_print(echo_error, 24);
-    } else if (len == 1){
+    if (len == 1){ //user entered only "echo"
         uart_print(new_line, 1);
-    }
-    else {
+    } else {
         for (int i = 1; i < len; i++){
             uart_print(command[i], len_str(command[i]));
             if(i+1 < len){
@@ -132,6 +127,7 @@ void start_msh(){
     int done = 0;
     uint32_t byte; 
     char* command[LINE_BUFFER_CAPACITY + 1];
+    char tokens[LINE_BUFFER_CAPACITY + 1][LINE_BUFFER_CAPACITY + 1];
 
 
     //init line buffer
@@ -151,7 +147,7 @@ void start_msh(){
                 switch (byte){
                     case '\n':
                     //line entered, move to logic for handling it. 
-                    tokenize_string(lb.buffer, lb.length, space, command);
+                    tokenize_string(lb.buffer, lb.length, space, command, tokens);
                     run_command(command);
                     clear_line_buffer(&lb);
                     done = 1;
