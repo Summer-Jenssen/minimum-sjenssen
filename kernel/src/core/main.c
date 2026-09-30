@@ -17,7 +17,7 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
         minemu_fail_stop();
     }
 
-    char helloWorld[] = "Hello World\n";
+    char helloWorld[] = "hello world\n";
     uart_print(helloWorld, 12);
 
     minemu_trace_event(1);
