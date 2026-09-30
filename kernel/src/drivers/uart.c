@@ -13,6 +13,7 @@ struct uart_rx_buffer{
 };
 
 static struct uart_rx_buffer rx_buffer; 
+// static int counter = 0;
 
 void uart_init(){
     rx_buffer.nbytes_available = MINEMU_UART_RX_CAPACITY;
@@ -60,15 +61,6 @@ int readb_uart_rx_buffer(uint32_t* byte){
     return 1;
 }
 
-void uart_handler(struct minemu_trap_frame *frame){
-    (void)frame; //not using frame so we can ignore it :)
-
-    while(MINEMU_UART0->status & MINEMU_UART_STATUS_RX_READY) {
-        uint32_t byte = MINEMU_UART0->rx_data; // read a single byte
-        writeb_uart_rx_buffer(byte);
-    }
-}
-
 void uart_print(char* str, int len){
     int total_bytes_printed = 0;
     while (total_bytes_printed < len){
@@ -78,5 +70,16 @@ void uart_print(char* str, int len){
     MINEMU_UART0->tx_data = (uint32_t)str[total_bytes_printed];
     total_bytes_printed = total_bytes_printed + 1;
     }
+    }
+}
+
+void uart_handler(struct minemu_trap_frame *frame){
+    (void)frame; //not using frame so we can ignore it :)
+    // counter++;
+    // char digit = (char)('0' + counter);
+    // uart_print(&digit, 1);
+    while(MINEMU_UART0->status & MINEMU_UART_STATUS_RX_READY) {
+        uint32_t byte = MINEMU_UART0->rx_data; // read a single byte
+        writeb_uart_rx_buffer(byte);
     }
 }

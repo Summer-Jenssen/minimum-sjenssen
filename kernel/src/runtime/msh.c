@@ -56,13 +56,13 @@ void tokenize_string(char* string, int str_len, const char* delim, char* output[
 int string_equal(char* str1, char* str2){
     int i = 0;
     while(1){
-        if (str1[i] == str2[i]){ //regular character equals the other
+        if (str1[i] == '\0' && str2[i] == '\0'){ //both end at the same time
+            return 1;
+        } else if (str1[i] == str2[i]){ //regular character equals the other
             i++;
             continue;
         } else if ((str1[i] == '\0' && str2[i] != '\0') || (str2[i] == '\0' && str1[i] != '\0')){ //either end prematurely
             return 0;
-        } else if (str1[i] == '\0' && str2[i] == '\0'){ //both end at the same time
-            return 1;
         } else { //regular character does not equal the other
             return 0;
         }
@@ -90,20 +90,7 @@ int len_str(char* str){
 
 //---------------commands----------------
 
-
-void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
-    if(command[0] == NULL){
-        //do nothing
-    } else if (string_equal(command[0], "echo") == 1){
-        echo(command);
-    } else {
-        uart_print(cmd_not_found, 19);
-        uart_print(command[0], len_str(command[0]));
-        uart_print(new_line, 1);
-    }
-}
-
-void echo(char* command[LINE_BUFFER_CAPACITY]){
+void echo(char* command[LINE_BUFFER_CAPACITY + 1]){
     int len = len_command(command);
     if (len == 1){ //user entered only "echo"
         uart_print(new_line, 1);
@@ -114,6 +101,18 @@ void echo(char* command[LINE_BUFFER_CAPACITY]){
                 uart_print(space, 1);
             }
         }
+        uart_print(new_line, 1);
+    }
+}
+
+void run_command(char* command[LINE_BUFFER_CAPACITY + 1]){
+    if(command[0] == NULL){
+        //do nothing
+    } else if (string_equal(command[0], "echo") == 1){
+        echo(command);
+    } else {
+        uart_print(cmd_not_found, 19);
+        uart_print(command[0], len_str(command[0]));
         uart_print(new_line, 1);
     }
 }
