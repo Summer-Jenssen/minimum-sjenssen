@@ -3,6 +3,7 @@
 #include "minemu/trace.h"
 #include "minemu/platform.h"
 #include "minemu/uart.h"
+#include "minemu/msh.h"
 
 void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
     if ((uintptr_t)boot_info != MINEMU_BOOT_INFO_VADDR ||
@@ -17,10 +18,14 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
         minemu_fail_stop();
     }
 
-    char helloWorld[] = "Hello World\n";
-    uart_print(helloWorld, 12);
-
     minemu_trace_event(1);
-    minemu_fail_stop();
+    MINEMU_INTERRUPT->enable = UINT32_C(1) << MINEMU_IRQ_UART0;
+    MINEMU_UART0->control = MINEMU_UART_CONTROL_RX_IRQ_ENABLE;
+    __asm__ volatile("cpsie i" : : : "memory");
+    uart_init();
+    MINEMU_INTERRUPT->enable = UINT32_C(1) << MINEMU_IRQ_UART0;
+    start_msh();
+    
+    
 
 }
