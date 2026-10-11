@@ -2,12 +2,15 @@
 #include "minemu/irq.h"
 #include "minemu/platform.h"
 #include "minemu/uart.h"
+#include "minemu/debug.h"
 
 #define NUM_PERIPHERALS 4 //may need to edit at a later date
 typedef void (*handler)(struct minemu_trap_frame *frame);
 static handler function_table[NUM_PERIPHERALS] = {NULL, &uart0_handler, &uart1_handler, NULL};
 
 struct minemu_trap_frame *minemu_irq_dispatch(struct minemu_trap_frame *frame){
+    //breakpoint(2);
+    //MINEMU_UART0->tx_data = (uint32_t)'X';
     uint32_t source = (uint32_t)frame->exception_id;
     if((int)source >= 0 && (int)source < NUM_PERIPHERALS ){
         if(function_table[(int)source] != NULL){

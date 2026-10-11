@@ -44,28 +44,41 @@ struct minemu_trap_frame *minemu_svc_dispatch(struct minemu_trap_frame *frame){
 
             } else if (operation == MINEMU_IOCTL_UART_READ){
                 if( fd == MINEMU_FD_UART_OUT || fd == MINEMU_FD_UART_IN){
-                    uint32_t* arg0 = (uint32_t*) (uintptr_t) frame->r[2];
+                    char* arg0 = (char*) (uintptr_t) frame->r[2];
                     uint32_t arg1 = frame->r[3];
                     if(validate_mem_range(frame->r[2], arg1, 1, 0) == 1){
                         uint32_t nbytes_read = 0;
                         for(int i = 0; (uint32_t)i < arg1; i++){
-                            int ret_val = readb_uart_rx_buffer(&arg0[i], fd);
+                            uint32_t temp;
+                            int ret_val = readb_uart_rx_buffer(&temp, fd);
                             if(ret_val == 0){
+                                arg0[i] = (char)temp;
                                 nbytes_read++;
+                            } else {
+                                break;
                             }
                         }
-                        if(nbytes_read == 0){ //failure :(
-                            frame->r[0] = (uint32_t)-1;
-                        } else { //we wrote at least something
-                            frame->r[0] = nbytes_read;
-                        }
+                        frame->r[0] = nbytes_read;
                     } else {
                         frame->r[0] = (uint32_t)-1;
                     }
                 } else {
                     frame->r[0] = (uint32_t)-1;
                 }
-            } else if (operation == MINEMU_IOCTL_RNG_SEED){
+            } 
+            // else if (operation == MINEMU_IOCTL_UART_STATUS){
+            //     if (fd == MINEMU_FD_UART_OUT){
+            //         *(uint32_t*)(uintptr_t)frame->r[0] = MINEMU_UART0->status;
+            //         frame->r[0] = 0;
+            //     } else if (fd == MINEMU_FD_UART_IN){
+            //         *(uint32_t*)(uintptr_t)frame->r[0] = MINEMU_UART1->status;
+            //         frame->r[0] = 0;
+            //     } else {
+            //         frame->r[0] = (uint32_t)-1;
+            //     }
+                
+            // } 
+            else if (operation == MINEMU_IOCTL_RNG_SEED){
                 if (fd == MINEMU_FD_RNG){
                 uint32_t arg0 = frame->r[2]; //new seed
                 MINEMU_RNG->seed = arg0;
@@ -93,7 +106,22 @@ struct minemu_trap_frame *minemu_svc_dispatch(struct minemu_trap_frame *frame){
                 } else {
                     frame->r[0] = (uint32_t)-1;
                 }
+                //Created with the assitance of Claude Sonnet 5.5
+                //Pronpt/Context: Discovered it was needed while debugging
+                //Date: 10/11/2026
+            } else if (operation == MINEMU_IOCTL_RNG_STATE){
+                if (fd == MINEMU_FD_RNG &&
+                    validate_mem_range(frame->r[2], sizeof(uint32_t), 1, 0) == 1){
+                    *(uint32_t*)(uintptr_t)frame->r[2] = MINEMU_RNG->state;
+                    frame->r[0] = 0;
+                } else {
+                    frame->r[0] = (uint32_t)-1;
+                }
+            } else {
+                frame->r[0] = (uint32_t)-1;
             }
+        } else { 
+            frame->r[0] = (uint32_t)-1; 
         }
     } else {
         frame->r[0] = (uint32_t)-1;

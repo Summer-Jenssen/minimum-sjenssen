@@ -17,7 +17,6 @@ RUNTIME_OBJECTS := \
 	$(BUILD)/drivers/uart.o \
 	$(BUILD)/runtime/irq.o \
 	$(BUILD)/startup/irq_trampoline.o \
-	$(BUILD)/runtime/msh.o \
 	$(BUILD)/startup/svc_trampoline.o \
 	$(BUILD)/startup/user.o \
 	$(BUILD)/runtime/syscall.o 
@@ -31,6 +30,7 @@ CFLAGS := $(ARCH_FLAGS) \
 	-ffreestanding \
 	-fno-builtin \
 	-fdata-sections \
+	-O2 \
 	-ffunction-sections \
 	-fno-stack-protector \
 	-std=c11 \

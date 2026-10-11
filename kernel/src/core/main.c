@@ -3,10 +3,10 @@
 #include "minemu/trace.h"
 #include "minemu/platform.h"
 #include "minemu/uart.h"
-#include "minemu/msh.h"
 #include "minemu/mmu.h"
 #include "minemu/syscall.h"
 #include "minemu/trace.h"
+#include "minemu/debug.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,7 +16,7 @@
 #define USER_IMAGE_BASE UINT32_C(0x00400000)
 #define USER_STACK_BOTTOM UINT32_C(0x007ff000)
 #define USER_STACK_TOP UINT32_C(0x00800000)
-#define SYSTEM_ROM_TABLE_COUNT 4U
+#define SYSTEM_ROM_TABLE_COUNT 1U
 
 static uint32_t system_rom_tables[SYSTEM_ROM_TABLE_COUNT][1024]
     __attribute__((aligned(MINEMU_PAGE_SIZE)));
@@ -228,7 +228,6 @@ static bool load_user_module(const struct minemu_boot_info *boot_info,
 
         uint32_t pte_flags = pte_flags_from_segment(segment->flags);
         if (!prepare_user_range(segment->virtual_address, segment->memory_size, pte_flags) ||
-            !write_user_range(segment->virtual_address, NULL, segment->memory_size) ||
             !write_user_range(segment->virtual_address, image + segment->data_offset,
                               segment->file_size)) {
             return false;
@@ -343,13 +342,20 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
         minemu_fail_stop();
     }
 
-    minemu_trace_event(1);
-    MINEMU_INTERRUPT->enable = UINT32_C(1) << MINEMU_IRQ_UART0;
-    MINEMU_UART0->control = MINEMU_UART_CONTROL_RX_IRQ_ENABLE;
-    __asm__ volatile("cpsie i" : : : "memory");
-    uart_init();
+    //minemu_trace_event(1);
+    uart_init();                                   
+    MINEMU_UART0->control |= MINEMU_UART_CONTROL_RX_IRQ_ENABLE;
+    MINEMU_UART1->control |= MINEMU_UART_CONTROL_RX_IRQ_ENABLE; 
+    MINEMU_INTERRUPT->enable |= (UINT32_C(1) << MINEMU_IRQ_UART0) |
+                                (UINT32_C(1) << MINEMU_IRQ_UART1);
 
+    __asm__ volatile("cpsie i" : : : "memory");
+
+    //breakpoint(1);
     minemu_enter_user(module->entry_vaddr, USER_STACK_TOP);
+    //    for (;;) { __asm__ volatile("nop"); }
+    // __asm__ volatile("cpsie i" : : : "memory");
+    // for (;;) { __asm__ volatile("nop"); }   
 
     
     //start_msh(); needs to move to user mode
