@@ -55,5 +55,6 @@ static inline uint32_t minemu_mmu_dfar(void) {
     __asm__ volatile("mrc p15, 0, %0, c6, c0, 0" : "=r"(value));
     return value;
 }
+int validate_mem_range(uint32_t vaddr, uint32_t len, int isWritable, int isReadable);
 
 #endif

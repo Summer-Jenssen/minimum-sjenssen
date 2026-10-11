@@ -5,7 +5,7 @@
 
 #define NUM_PERIPHERALS 4 //may need to edit at a later date
 typedef void (*handler)(struct minemu_trap_frame *frame);
-static handler function_table[NUM_PERIPHERALS] = {NULL, &uart_handler, NULL, NULL};
+static handler function_table[NUM_PERIPHERALS] = {NULL, &uart0_handler, &uart1_handler, NULL};
 
 struct minemu_trap_frame *minemu_irq_dispatch(struct minemu_trap_frame *frame){
     uint32_t source = (uint32_t)frame->exception_id;
