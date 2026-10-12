@@ -24,9 +24,9 @@ static uint32_t user_page_table[1024] __attribute__((aligned(MINEMU_PAGE_SIZE)))
 static uint8_t user_image_pages[MAX_USER_IMAGE_PAGES][MINEMU_PAGE_SIZE]
     __attribute__((aligned(MINEMU_PAGE_SIZE)));
 static uint8_t user_stack[MINEMU_PAGE_SIZE] __attribute__((aligned(MINEMU_PAGE_SIZE)));
-static uint32_t user_page_vaddrs[MAX_USER_IMAGE_PAGES];
-static uint32_t user_page_flags[MAX_USER_IMAGE_PAGES];
-static size_t user_page_count;
+extern uint32_t user_page_vaddrs[MAX_USER_IMAGE_PAGES];
+extern uint32_t user_page_flags[MAX_USER_IMAGE_PAGES];
+extern size_t user_page_count;
 
 
 void minemu_enter_user(uint32_t entry_vaddr, uint32_t stack_top) __attribute__((noreturn));
@@ -276,48 +276,6 @@ void minemu_abort_dispatch(struct minemu_trap_frame *frame) {
     minemu_fail_stop();
 }
 
-//returns 1 if flags match, 0 if not
-static int check_flags_and_if_addr_exists(uint32_t page_vaddr, uint32_t flags) {
-    int addr_exists = 0;
-    for (size_t index = 0; index < user_page_count; ++index) {
-        if (user_page_vaddrs[index] == page_vaddr) {
-            addr_exists = 1;
-            if ((user_page_flags[index] & flags) != flags) {
-                return 0;
-            }
-        }
-    }
-    if(addr_exists == 0){
-        return 0;
-    }
-    return 1;
-}
-
-//returns 1 if valid, 0 if not. isWritable and isReadable should be set to 0 for false, 1 for true. This way you can check for perms.
-int validate_mem_range(uint32_t vaddr, uint32_t len, int isWritable, int isReadable){
-    uint32_t flags = 0;
-    if(isReadable == 1){
-        flags = flags | MINEMU_PTE_READABLE;
-    }
-    if(isWritable == 1){
-        flags = flags | MINEMU_PTE_WRITABLE;
-    }
-
-    while (len != 0) {
-        uint32_t page_vaddr = vaddr & MINEMU_PTE_PAGE_MASK;
-        if (check_flags_and_if_addr_exists(page_vaddr, flags) == 0) {
-            return false;
-        }
-        uint32_t offset = vaddr - page_vaddr;
-        uint32_t chunk = MINEMU_PAGE_SIZE - offset;
-        if (chunk > len) {
-            chunk = len;
-        }
-        vaddr += chunk;
-        len -= chunk;
-    }
-    return true;
-}
 
 void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
     static const char module_name[] = "minimum-user";

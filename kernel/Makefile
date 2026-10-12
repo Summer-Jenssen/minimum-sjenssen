@@ -19,7 +19,8 @@ RUNTIME_OBJECTS := \
 	$(BUILD)/startup/irq_trampoline.o \
 	$(BUILD)/startup/svc_trampoline.o \
 	$(BUILD)/startup/user.o \
-	$(BUILD)/runtime/syscall.o 
+	$(BUILD)/runtime/syscall.o \
+	$(BUILD)/runtime/mmu.o \
 
 OBJECTS := $(CORE_OBJECT) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)

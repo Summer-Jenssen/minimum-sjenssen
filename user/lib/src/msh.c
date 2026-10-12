@@ -1,6 +1,6 @@
 //#include "minemu/uart.h"
 #include "minemu/user_abi.h"
-#define LINE_BUFFER_CAPACITY 20
+#define LINE_BUFFER_CAPACITY 40
 
 char* space = " ";
 char* new_line = "\n";
@@ -179,7 +179,7 @@ void start_msh(){
                     break;
                     default:
                     //regular character, write it into the buffer
-                    if(lb.next_write < 20){
+                    if(lb.next_write < LINE_BUFFER_CAPACITY){
                         lb.buffer[lb.next_write] = (char)byte;
                         lb.next_write++;
                         lb.length++;
